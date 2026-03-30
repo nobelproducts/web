@@ -1,0 +1,6 @@
+# Deployment
+**/images/*.tar
+
+# Environment files
+.env*
+!.env.example
