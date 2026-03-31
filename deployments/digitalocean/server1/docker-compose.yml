@@ -61,27 +61,27 @@ services:
   #   networks:
   #     - local-network
 
-  # gustex-screen-web:
-  #   image: gustex-screen-web:latest
-  #   container_name: gustex-screen-web
-  #   env_file:
-  #     - ./environments/gustex-screen/.env.prod
-  #   ports:
-  #     - "3013:3013"
-  #   restart: always
-  #   healthcheck:
-  #     test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3013/healthcheck"]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 3
-  #     start_period: 40s
-  #   logging:
-  #     driver: json-file
-  #     options:
-  #       max-size: "10m"
-  #       max-file: "3"
-  #   networks:
-  #     - local-network
+  gustex-screen-web:
+    image: gustex-screen-web:latest
+    container_name: gustex-screen-web
+    env_file:
+      - ./environments/gustex-screen/.env.prod
+    ports:
+      - "3013:3013"
+    restart: always
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3013/healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - local-network
 
   hotprint-screen-web:
     image: hotprint-screen-web:latest
