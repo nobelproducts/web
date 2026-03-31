@@ -6,10 +6,12 @@ REMOTE_HOST="146.190.200.50"
 REMOTE_DIR="/root/nobelproducts"
 
 ITEM_LIST=(
-  # "./environments"
-  # "./images"
-  # "./deploy.sh"
+  "./environments"
+  "./images"
+  "./deploy.sh"
   "./docker-compose.yml"
+  "./init-certs.sh"
+  "./renew-certs.sh"
 )
 
 for ITEM in "${ITEM_LIST[@]}"; do

@@ -4,7 +4,7 @@ services:
     container_name: nginx
     ports:
       - "80:80"
-      # - "443:443"
+      - "443:443"
     restart: always
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost"]
@@ -15,8 +15,7 @@ services:
       - local-network
     volumes:
       - ./environments/nginx/nginx.conf:/etc/nginx/nginx.conf
-      # - ./environments/nginx/certs/fullchain.pem:/etc/nginx/certs/fullchain.pem
-      # - ./environments/nginx/certs/privkey.pem:/etc/nginx/certs/privkey.pem
+      - /etc/letsencrypt:/etc/letsencrypt:ro
 
   dragon-screen-web:
     image: dragon-screen-web:latest
@@ -27,7 +26,7 @@ services:
       - "3011:3011"
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3011/healthcheck"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3011/healthcheck"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -40,49 +39,49 @@ services:
     networks:
       - local-network
 
-  fenix-screen-web:
-    image: fenix-screen-web:latest
-    container_name: fenix-screen-web
-    env_file:
-      - ./environments/fenix-screen/.env.prod
-    ports:
-      - "3010:3010"
-    restart: always
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3010/healthcheck"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-    networks:
-      - local-network
+  # fenix-screen-web:
+  #   image: fenix-screen-web:latest
+  #   container_name: fenix-screen-web
+  #   env_file:
+  #     - ./environments/fenix-screen/.env.prod
+  #   ports:
+  #     - "3010:3010"
+  #   restart: always
+  #   healthcheck:
+  #     test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3010/healthcheck"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 40s
+  #   logging:
+  #     driver: json-file
+  #     options:
+  #       max-size: "10m"
+  #       max-file: "3"
+  #   networks:
+  #     - local-network
 
-  gustex-screen-web:
-    image: gustex-screen-web:latest
-    container_name: gustex-screen-web
-    env_file:
-      - ./environments/gustex-screen/.env.prod
-    ports:
-      - "3013:3013"
-    restart: always
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3013/healthcheck"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-    networks:
-      - local-network
+  # gustex-screen-web:
+  #   image: gustex-screen-web:latest
+  #   container_name: gustex-screen-web
+  #   env_file:
+  #     - ./environments/gustex-screen/.env.prod
+  #   ports:
+  #     - "3013:3013"
+  #   restart: always
+  #   healthcheck:
+  #     test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3013/healthcheck"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 40s
+  #   logging:
+  #     driver: json-file
+  #     options:
+  #       max-size: "10m"
+  #       max-file: "3"
+  #   networks:
+  #     - local-network
 
   hotprint-screen-web:
     image: hotprint-screen-web:latest
@@ -93,7 +92,7 @@ services:
       - "3014:3014"
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3014/healthcheck"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3014/healthcheck"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -115,7 +114,7 @@ services:
       - "3012:3012"
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3012/healthcheck"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3012/healthcheck"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -137,7 +136,7 @@ services:
       - "3015:3015"
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3015/healthcheck"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3015/healthcheck"]
       interval: 30s
       timeout: 10s
       retries: 3
