@@ -4,7 +4,7 @@ set -e  # Exit on any error
 
 DOCKER_IMAGE_FILES=(
     "./images/dragon-screen-web.tar"
-    # "./images/fenix-screen-web.tar"
+    "./images/fenix-screen-web.tar"
     "./images/gustex-screen-web.tar"
     "./images/hotprint-screen-web.tar"
     "./images/turbo-screen-web.tar"
