@@ -12,7 +12,7 @@ LOG_PREFIX="[renew-certs]"
 
 DOMAINS=(
   "dragonscreenservice.com"
-  # "fenixscreen.com"
+  "fenixscreen.com"
   "gustexscreen.com"
   "hotprintscreen.com"
   "turboscreenprint.com"

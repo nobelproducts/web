@@ -13,7 +13,7 @@ EMAIL="${1:?Usage: $0 <email>}"
 
 DOMAINS=(
   "dragonscreenservice.com www.dragonscreenservice.com"
-  # "fenixscreen.com www.fenixscreen.com"
+  "fenixscreen.com www.fenixscreen.com"
   "gustexscreen.com www.gustexscreen.com"
   "hotprintscreen.com www.hotprintscreen.com"
   "turboscreenprint.com www.turboscreenprint.com"

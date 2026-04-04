@@ -39,27 +39,27 @@ services:
     networks:
       - local-network
 
-  # fenix-screen-web:
-  #   image: fenix-screen-web:latest
-  #   container_name: fenix-screen-web
-  #   env_file:
-  #     - ./environments/fenix-screen/.env.prod
-  #   ports:
-  #     - "3010:3010"
-  #   restart: always
-  #   healthcheck:
-  #     test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3010/healthcheck"]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 3
-  #     start_period: 40s
-  #   logging:
-  #     driver: json-file
-  #     options:
-  #       max-size: "10m"
-  #       max-file: "3"
-  #   networks:
-  #     - local-network
+  fenix-screen-web:
+    image: fenix-screen-web:latest
+    container_name: fenix-screen-web
+    env_file:
+      - ./environments/fenix-screen/.env.prod
+    ports:
+      - "3010:3010"
+    restart: always
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3010/healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - local-network
 
   gustex-screen-web:
     image: gustex-screen-web:latest
