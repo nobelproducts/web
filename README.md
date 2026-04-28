@@ -25,8 +25,6 @@ Each website is its own Next.js app running in a Docker container, fronted by a 
 ```
 web/
 ├── Makefile                                  # Build & save Docker images (run from monorepo root)
-├── .github/workflows/
-│   └── deploy-screen-production.yml           # Reusable CI deploy (invoked by each screen app repo)
 └── deployments/
     └── digitalocean/
         └── server1/
@@ -80,20 +78,8 @@ SSL certificates are stored on the **host** at `/etc/letsencrypt` and bind-mount
 
 ## Automated deployment (GitHub Actions)
 
-Production deploys can run from **each screen app repository** when you push a **version tag**.  
-This repo (`nobelproducts/web`) hosts the **reusable workflow**; individual apps call it so Docker image names, ports, and compose services stay aligned with the root **`Makefile`** (`build-*` / `deploy-*` / `ship-*` targets).
-
-### What lives in `web`
-
-| Path | Purpose |
-|------|---------|
-| `.github/workflows/deploy-screen-production.yml` | Reusable workflow: checkout **calling repo** at the tag, checkout **`nobelproducts/web`** for nginx/compose/envs, build image, rsync to the server, `docker load` + `docker compose up -d <service>` |
-
-### Callers (each app repo)
-
-Each project has `.github/workflows/deploy-production.yml`, which triggers on tag `v*` and invokes:
-
-`nobelproducts/web/.github/workflows/deploy-screen-production.yml@main`
+Production deploys run from **each screen app repository** when you push a **version tag** (`v*`).
+Each app repo contains **`.github/workflows/deploy-production.yml`** (full workflow in that repo—no cross-repo reusable workflow required). At runtime the job clones **`nobelproducts/web`** next to the app so paths match the monorepo layout (`web/deployments/digitalocean/server1/…`). Docker image names, ports, and compose services match the root **`Makefile`** (`build-*` / `deploy-*` / `ship-*` targets).
 
 | GitHub repo / folder | Makefile targets | Docker image | Compose service | Port |
 |----------------------|------------------|--------------|-----------------|------|
@@ -104,20 +90,28 @@ Each project has `.github/workflows/deploy-production.yml`, which triggers on ta
 | `hotprint-screen-studio` | `build-hotprint`, … | `hotprint-screen-web` | `hotprint-screen-web` | 3014 |
 | `easy-site-builder` | `build-flash`, … | `flash-screen-web` | `flash-screen-web` | 3015 |
 
-### One-time setup
+### Setting secrets in GitHub
 
-1. Merge `.github/workflows/deploy-screen-production.yml` on **`nobelproducts/web`** default branch (`main`). Callers reference `@main`; pin to a tag later if you prefer stability.
-2. In **organization or repo settings → Actions → General**, allow workflows to **reuse workflows** from `nobelproducts/web` (same-org callers usually work out of the box).
-3. In **each app repo** that should deploy from CI, add these **secrets** (same names everywhere):
+Use **repository secrets** on each app repo that runs `deploy-production.yml` (so the workflow can SSH to the server and clone `nobelproducts/web` when needed).
 
-| Secret | Purpose |
-|--------|---------|
-| `DEPLOY_SSH_PRIVATE_KEY` | SSH private key allowed to log into the droplet (same role as local `id_rsa_fenix_screen`). |
-| `DEPLOY_HOST` | Server hostname or IP (matches root Makefile `REMOTE_HOST`). |
-| `DEPLOY_USER` | Optional; defaults to `root` when unset. |
-| `DEPLOY_REMOTE_DIR` | Optional; defaults to `/root/nobelproducts` when unset. |
+1. Open the repository on GitHub (e.g. `nobelproducts/dragon-print-studio`).
+2. Go to **Settings** → **Secrets and variables** → **Actions**.
+3. Open the **Secrets** tab.
+4. Click **New repository secret**.
+5. Set **Name** to the exact value in the table below (case-sensitive) and **Secret** to the value, then save.
+6. Repeat for each required secret. Optional secrets can be omitted; the workflow uses defaults noted below.
 
-If **`nobelproducts/web` is private**, callers must authenticate to clone it: create secret **`WEB_REPO_CHECKOUT_TOKEN`** (PAT with read access to `web`) and add `token: ${{ secrets.WEB_REPO_CHECKOUT_TOKEN }}` under the “Checkout nobelproducts/web” step inside `deploy-screen-production.yml`.
+You can reuse the **same secret names and values** across all six screen app repos so each deploy behaves like your local `Makefile` (`REMOTE_HOST`, `REMOTE_USER`, `REMOTE_DIR`, SSH key).
+
+| Name | Required | Description |
+|------|----------|-------------|
+| `DEPLOY_SSH_PRIVATE_KEY` | **Yes** | Full PEM private key that can SSH into the production droplet (same role as local `~/.ssh/id_rsa_fenix_screen`). Paste the entire key including `-----BEGIN … KEY-----` / `-----END … KEY-----` lines. |
+| `DEPLOY_HOST` | **Yes** | Server hostname or IP (same as root `Makefile` `REMOTE_HOST`). |
+| `DEPLOY_USER` | No | SSH user (default **`root`** if unset). |
+| `DEPLOY_REMOTE_DIR` | No | Remote deploy directory (default **`/root/nobelproducts`** if unset). |
+| `WEB_REPO_CHECKOUT_TOKEN` | Only if **`nobelproducts/web` is private** | Fine-grained or classic PAT with **read** access to repo `nobelproducts/web`. After adding this secret, edit `.github/workflows/deploy-production.yml` in that app repo and add under the second checkout’s `with:` block: `token: ${{ secrets.WEB_REPO_CHECKOUT_TOKEN }}`. |
+
+See GitHub’s documentation: [Using secrets in GitHub Actions](https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions).
 
 ### Release from an app repo
 
@@ -126,7 +120,7 @@ git tag v1.2.3
 git push origin v1.2.3
 ```
 
-Manual run: **Actions → Deploy … (production) → Run workflow**. Optional input **`web_ref`** selects which branch/tag of **`nobelproducts/web`** to sync (nginx, `docker-compose.yml`, `environments/`). Tag pushes default **`web_ref`** to `main`.
+Manual run: **Actions → Deploy … (production) → Run workflow**. Optional input **`web_ref`** selects which branch/tag of **`nobelproducts/web`** to sync. Tag pushes default **`web_ref`** to `main`.
 
 ---
 
