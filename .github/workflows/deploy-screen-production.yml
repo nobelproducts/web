@@ -1,0 +1,127 @@
+# Reusable deploy pipeline for nobelproducts screen apps.
+# Mapping (folder → IMAGE_NAME → compose service → PORT): see nobelproducts/Makefile top-level targets.
+#
+# Callers live in each app repo; tag pushes trigger deploy using deployment assets from nobelproducts/web.
+
+name: Deploy screen app (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      image_name:
+        description: Docker image name (Makefile IMAGE_NAME / tar basename without .tar)
+        required: true
+        type: string
+      compose_service:
+        description: docker-compose.yml service name (matches Makefile deploy-* target)
+        required: true
+        type: string
+      port:
+        description: PORT passed as Docker build-arg (per-app Makefile PORT)
+        required: true
+        type: string
+      web_ref:
+        description: nobelproducts/web git ref (nginx, compose, environments)
+        required: false
+        type: string
+        default: main
+
+concurrency:
+  group: deploy-screen-${{ inputs.compose_service }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    env:
+      IMAGE_NAME: ${{ inputs.image_name }}
+      COMPOSE_SERVICE: ${{ inputs.compose_service }}
+      DEPLOY_ROOT: web/deployments/digitalocean/server1
+
+    steps:
+      # When called from another repo, checkout defaults to THIS workflow's repo (web) unless overridden.
+      - name: Checkout calling repository (screen app at triggering ref)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository }}
+          ref: ${{ github.ref }}
+
+      # If nobelproducts/web is private, add token under `with:`:
+      #   token: ${{ secrets.WEB_REPO_CHECKOUT_TOKEN }}
+      - name: Checkout nobelproducts/web (deployment bundle)
+        uses: actions/checkout@v4
+        with:
+          repository: nobelproducts/web
+          path: web
+          ref: ${{ inputs.web_ref }}
+
+      - name: Configure SSH for rsync and remote docker
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Build Docker image (linux/amd64)
+        env:
+          PORT: ${{ inputs.port }}
+        run: |
+          docker build \
+            --platform linux/amd64 \
+            --build-arg VITE_ENV=production \
+            --build-arg VITE_DEBUG=false \
+            --build-arg PORT="$PORT" \
+            -t "${IMAGE_NAME}:latest" .
+
+      - name: Save image for rsync
+        run: |
+          mkdir -p "${DEPLOY_ROOT}/images"
+          docker save "${IMAGE_NAME}:latest" -o "${DEPLOY_ROOT}/images/${IMAGE_NAME}.tar"
+
+      - name: Sync deployment assets to server
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_REMOTE_DIR: ${{ secrets.DEPLOY_REMOTE_DIR }}
+        working-directory: ${{ env.DEPLOY_ROOT }}
+        run: |
+          set -euo pipefail
+          RSYNC_SSH="ssh -i $HOME/.ssh/deploy_key -o StrictHostKeyChecking=yes"
+          USER_HOST="${DEPLOY_USER:-root}@${DEPLOY_HOST}"
+          REMOTE="${DEPLOY_REMOTE_DIR:-/root/nobelproducts}"
+          ITEM_LIST=(
+            "./environments"
+            "./images"
+            "./deploy.sh"
+            "./docker-compose.yml"
+            "./init-certs.sh"
+            "./renew-certs.sh"
+          )
+          for ITEM in "${ITEM_LIST[@]}"; do
+            if [[ -e "$ITEM" ]]; then
+              echo "Syncing $ITEM → ${USER_HOST}:${REMOTE}"
+              rsync -avz -e "$RSYNC_SSH" "$ITEM" "${USER_HOST}:${REMOTE}/"
+            else
+              echo "Skipping missing path: $ITEM"
+            fi
+          done
+
+      - name: Load image and restart container
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_REMOTE_DIR: ${{ secrets.DEPLOY_REMOTE_DIR }}
+        run: |
+          set -euo pipefail
+          USER_HOST="${DEPLOY_USER:-root}@${DEPLOY_HOST}"
+          REMOTE="${DEPLOY_REMOTE_DIR:-/root/nobelproducts}"
+          IMAGE_FILE="${IMAGE_NAME}.tar"
+          ssh -i "$HOME/.ssh/deploy_key" -o StrictHostKeyChecking=yes "$USER_HOST" \
+            "cd \"$REMOTE\" && docker load -i \"images/$IMAGE_FILE\" && docker compose up -d \"$COMPOSE_SERVICE\""

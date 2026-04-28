@@ -25,6 +25,8 @@ Each website is its own Next.js app running in a Docker container, fronted by a 
 ```
 web/
 ├── Makefile                                  # Build & save Docker images (run from monorepo root)
+├── .github/workflows/
+│   └── deploy-screen-production.yml           # Reusable CI deploy (invoked by each screen app repo)
 └── deployments/
     └── digitalocean/
         └── server1/
@@ -73,6 +75,58 @@ dragon  fenix  gustex  hotprint  turbo  flash
 
 All containers share `local-network` (Docker bridge). Nginx reaches each app by its container name (e.g. `dragon-screen-web:3011`).
 SSL certificates are stored on the **host** at `/etc/letsencrypt` and bind-mounted read-only into the nginx container.
+
+---
+
+## Automated deployment (GitHub Actions)
+
+Production deploys can run from **each screen app repository** when you push a **version tag**.  
+This repo (`nobelproducts/web`) hosts the **reusable workflow**; individual apps call it so Docker image names, ports, and compose services stay aligned with the root **`Makefile`** (`build-*` / `deploy-*` / `ship-*` targets).
+
+### What lives in `web`
+
+| Path | Purpose |
+|------|---------|
+| `.github/workflows/deploy-screen-production.yml` | Reusable workflow: checkout **calling repo** at the tag, checkout **`nobelproducts/web`** for nginx/compose/envs, build image, rsync to the server, `docker load` + `docker compose up -d <service>` |
+
+### Callers (each app repo)
+
+Each project has `.github/workflows/deploy-production.yml`, which triggers on tag `v*` and invokes:
+
+`nobelproducts/web/.github/workflows/deploy-screen-production.yml@main`
+
+| GitHub repo / folder | Makefile targets | Docker image | Compose service | Port |
+|----------------------|------------------|--------------|-----------------|------|
+| `dragon-print-studio` | `build-dragon`, `deploy-dragon`, `ship-dragon` | `dragon-screen-web` | `dragon-screen-web` | 3011 |
+| `bangkok-screen-masters` | `build-fenix`, … | `fenix-screen-web` | `fenix-screen-web` | 3010 |
+| `dtf-color-studio` | `build-turbo`, … | `turbo-screen-web` | `turbo-screen-web` | 3012 |
+| `gustex-print-studio` | `build-gustex`, … | `gustex-screen-web` | `gustex-screen-web` | 3013 |
+| `hotprint-screen-studio` | `build-hotprint`, … | `hotprint-screen-web` | `hotprint-screen-web` | 3014 |
+| `easy-site-builder` | `build-flash`, … | `flash-screen-web` | `flash-screen-web` | 3015 |
+
+### One-time setup
+
+1. Merge `.github/workflows/deploy-screen-production.yml` on **`nobelproducts/web`** default branch (`main`). Callers reference `@main`; pin to a tag later if you prefer stability.
+2. In **organization or repo settings → Actions → General**, allow workflows to **reuse workflows** from `nobelproducts/web` (same-org callers usually work out of the box).
+3. In **each app repo** that should deploy from CI, add these **secrets** (same names everywhere):
+
+| Secret | Purpose |
+|--------|---------|
+| `DEPLOY_SSH_PRIVATE_KEY` | SSH private key allowed to log into the droplet (same role as local `id_rsa_fenix_screen`). |
+| `DEPLOY_HOST` | Server hostname or IP (matches root Makefile `REMOTE_HOST`). |
+| `DEPLOY_USER` | Optional; defaults to `root` when unset. |
+| `DEPLOY_REMOTE_DIR` | Optional; defaults to `/root/nobelproducts` when unset. |
+
+If **`nobelproducts/web` is private**, callers must authenticate to clone it: create secret **`WEB_REPO_CHECKOUT_TOKEN`** (PAT with read access to `web`) and add `token: ${{ secrets.WEB_REPO_CHECKOUT_TOKEN }}` under the “Checkout nobelproducts/web” step inside `deploy-screen-production.yml`.
+
+### Release from an app repo
+
+```bash
+git tag v1.2.3
+git push origin v1.2.3
+```
+
+Manual run: **Actions → Deploy … (production) → Run workflow**. Optional input **`web_ref`** selects which branch/tag of **`nobelproducts/web`** to sync (nginx, `docker-compose.yml`, `environments/`). Tag pushes default **`web_ref`** to `main`.
 
 ---
 
