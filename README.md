@@ -109,9 +109,15 @@ You can reuse the **same secret names and values** across all six screen app rep
 | `DEPLOY_HOST` | **Yes** | Server hostname or IP (same as root `Makefile` `REMOTE_HOST`). |
 | `DEPLOY_USER` | No | SSH user (default **`root`** if unset). |
 | `DEPLOY_REMOTE_DIR` | No | Remote deploy directory (default **`/root/nobelproducts`** if unset). |
-| `WEB_REPO_CHECKOUT_TOKEN` | Only if **`nobelproducts/web` is private** | Fine-grained or classic PAT with **read** access to repo `nobelproducts/web`. After adding this secret, edit `.github/workflows/deploy-production.yml` in that app repo and add under the second checkout’s `with:` block: `token: ${{ secrets.WEB_REPO_CHECKOUT_TOKEN }}`. |
+| `WEB_REPO_CHECKOUT_TOKEN` | **Yes** (unless `nobelproducts/web` is **public** *and* checkout works without it) | Fine-grained or classic PAT with **Contents: Read** on repo **`nobelproducts/web`**. The workflow already passes `token: ${{ secrets.WEB_REPO_CHECKOUT_TOKEN }}` on the second checkout—you only create the PAT and save it as this secret on **each app repo** (e.g. `dragon-print-studio`). Without it, cloning a **private** `web` repo fails with **`remote: Repository not found`** / **`fatal: repository ... not found`**. |
 
 See GitHub’s documentation: [Using secrets in GitHub Actions](https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions).
+
+#### Checkout fails with “Repository not found” for `nobelproducts/web`
+
+1. Confirm the repo exists at `https://github.com/nobelproducts/web` (correct org/name).
+2. If the repo is **private**, create a PAT with read access to **`nobelproducts/web`** and add repository secret **`WEB_REPO_CHECKOUT_TOKEN`** on **`dragon-print-studio`** (and other screen repos). See [Fine-grained PAT](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token).
+3. If the repo is **public** but you still see this error, remove or rotate the PAT secret (stale/wrong token can cause failures).
 
 ### Release from an app repo
 
