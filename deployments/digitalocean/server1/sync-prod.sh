@@ -7,11 +7,11 @@ REMOTE_DIR="/root/nobelproducts"
 
 ITEM_LIST=(
   "./environments"
-  "./images"
-  "./deploy.sh"
-  "./docker-compose.yml"
-  "./init-certs.sh"
-  "./renew-certs.sh"
+  # "./images"
+  # "./deploy.sh"
+  # "./docker-compose.yml"
+  # "./init-certs.sh"
+  # "./renew-certs.sh"
 )
 
 for ITEM in "${ITEM_LIST[@]}"; do
