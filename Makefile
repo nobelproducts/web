@@ -4,7 +4,8 @@
         build-gustex   save-gustex   \
         build-hotprint save-hotprint \
         build-turbo    save-turbo    \
-        build-flash    save-flash
+        build-flash    save-flash    \
+        build-texture  save-texture
 
 IMAGES_DIR := web/deployments/digitalocean/server1/images
 
@@ -28,6 +29,7 @@ help:
 	@echo "    build-hotprint   Build hotprint-screen-web (hotprint-screen-studio)"
 	@echo "    build-turbo      Build turbo-screen-web    (dtf-color-studio)"
 	@echo "    build-flash      Build flash-screen-web    (easy-site-builder)"
+	@echo "    build-texture    Build dragon-texture-web  (dragon-texture-design)"
 	@echo ""
 	@echo "    save-dragon      Save dragon-screen-web.tar"
 	@echo "    save-fenix       Save fenix-screen-web.tar"
@@ -35,15 +37,16 @@ help:
 	@echo "    save-hotprint    Save hotprint-screen-web.tar"
 	@echo "    save-turbo       Save turbo-screen-web.tar"
 	@echo "    save-flash       Save flash-screen-web.tar"
+	@echo "    save-texture     Save dragon-texture-web.tar"
 	@echo ""
 
 # ── Aggregate ─────────────────────────────────────────────────────────────────
 
 build-and-save: build-all save-all
 
-build-all: build-dragon build-fenix build-gustex build-hotprint build-turbo build-flash
+build-all: build-dragon build-fenix build-gustex build-hotprint build-turbo build-flash build-texture
 
-save-all: save-dragon save-fenix save-gustex save-hotprint save-turbo save-flash
+save-all: save-dragon save-fenix save-gustex save-hotprint save-turbo save-flash save-texture
 
 # ── Build targets ─────────────────────────────────────────────────────────────
 
@@ -70,6 +73,10 @@ build-turbo:
 build-flash:
 	@echo "Building flash-screen-web from easy-site-builder..."
 	$(MAKE) -C easy-site-builder docker-build
+
+build-texture:
+	@echo "Building dragon-texture-web from dragon-texture-design..."
+	$(MAKE) -C dragon-texture-design docker-build
 
 # ── Save targets ──────────────────────────────────────────────────────────────
 
@@ -102,3 +109,8 @@ save-flash:
 	@mkdir -p $(IMAGES_DIR)
 	@echo "Saving flash-screen-web → $(IMAGES_DIR)/flash-screen-web.tar"
 	docker save flash-screen-web:latest -o $(IMAGES_DIR)/flash-screen-web.tar
+
+save-texture:
+	@mkdir -p $(IMAGES_DIR)
+	@echo "Saving dragon-texture-web → $(IMAGES_DIR)/dragon-texture-web.tar"
+	docker save dragon-texture-web:latest -o $(IMAGES_DIR)/dragon-texture-web.tar

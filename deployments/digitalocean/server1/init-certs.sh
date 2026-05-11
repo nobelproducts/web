@@ -18,6 +18,7 @@ DOMAINS=(
   "hotprintscreen.com www.hotprintscreen.com"
   "turboscreenprint.com www.turboscreenprint.com"
   "flashscreendtf.com www.flashscreendtf.com"
+  "dragontexture.com www.dragontexture.com"
 )
 
 # Install certbot if not present

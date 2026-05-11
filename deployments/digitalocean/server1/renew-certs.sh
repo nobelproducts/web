@@ -17,6 +17,7 @@ DOMAINS=(
   "hotprintscreen.com"
   "turboscreenprint.com"
   "flashscreendtf.com"
+  "dragontexture.com"
 )
 
 log() {

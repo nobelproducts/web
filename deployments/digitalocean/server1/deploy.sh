@@ -9,6 +9,7 @@ DOCKER_IMAGE_FILES=(
     "./images/hotprint-screen-web.tar"
     "./images/turbo-screen-web.tar"
     "./images/flash-screen-web.tar"
+    "./images/dragon-texture-web.tar"
 )
 
 DOCKER_COMPOSE_FILE="./docker-compose.yml"
